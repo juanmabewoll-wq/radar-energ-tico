@@ -258,6 +258,7 @@ tr{cursor:pointer}
     <button class="hbtn" onclick="openDimModal()">⚙ Dimensiones</button>
     <button class="hbtn" onclick="importData()">↑ Importar</button>
     <button class="hbtn" onclick="exportData()">↓ Exportar</button>
+    <button class="hbtn" onclick="hardRefresh()" title="Limpiar caché y recargar con la versión más reciente" style="color:var(--teal);border-color:rgba(0,201,167,0.3)">↻ Actualizar</button>
     <button class="hbtn pri" onclick="openModal()">+ Nueva señal</button>
   </header>
 
@@ -408,8 +409,8 @@ tr{cursor:pointer}
 <div class="notif" id="notif"></div>
 
 <script>
-const SK='radar_v6';
-const DATA_VERSION='2026-05-12-v4';
+const SK='radar_v7';
+const DATA_VERSION='2026-05-12-v5';
 const DIMS_DEF=[
   {id:'hidrogeno',name:'Hidrógeno y e-fuels',color:'#3d8ef0'},
   {id:'almacenamiento',name:'Almacenamiento de Energía',color:'#00c9a7'},
@@ -1089,6 +1090,12 @@ function printSignal(){
 }
 
 // ── IMPORT / EXPORT ──
+function hardRefresh(){
+  if(confirm('¿Actualizar el radar a la versión más reciente? Se recargarán los datos del servidor. Los comentarios guardados se conservan.')){
+    localStorage.removeItem(SK);
+    location.reload(true);
+  }
+}
 function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({signals,dims},null,2)],{type:'application/json'}));a.download='radar_'+new Date().toISOString().split('T')[0]+'.json';a.click();notif('Exportado ✓');}
 function importData(){const inp=document.createElement('input');inp.type='file';inp.accept='.json';inp.onchange=e=>{const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.signals&&d.dims){signals=d.signals;dims=d.dims;saveState();renderAll();notif(d.signals.length+' señales importadas ✓');}else alert('Formato inválido.');}catch(err){alert('Error: '+err.message);}};r.readAsText(e.target.files[0]);};inp.click();}
 
