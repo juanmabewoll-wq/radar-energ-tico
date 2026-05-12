@@ -406,6 +406,7 @@ tr{cursor:pointer}
 
 <script>
 const SK='radar_v4';
+const DATA_VERSION='2026-05-12-v1';
 const DIMS_DEF=[
   {id:'hidrogeno',name:'Hidrógeno y e-fuels',color:'#3d8ef0'},
   {id:'almacenamiento',name:'Almacenamiento de Energía',color:'#00c9a7'},
@@ -436,8 +437,28 @@ const SIGS_DEF=[
   {id:15,nombre:'Sodio-ion a escala comercial (CATL 60 GWh)',desc:'CATL firma 60 GWh con HyperStrong — sodio-ion entra al mercado BESS grid-scale.',dim:'almacenamiento',horizonte:'h1',estrategico:8,mercado:8,trl:8,regulatorio:3,competidores:['CATL + HyperStrong (China)','HiNa Battery (China)','Altris / Faradion (Europa)'],riesgos:[{n:'H',t:'Cadena de suministro concentrada en China'},{n:'M',t:'Certificaciones técnicas sodio-ion en AR pendientes'},{n:'L',t:'Marco regulatorio BESS existente — sin cambios'}],comentarios:[],historial:[{accion:'Señal creada 12/05/2026 — CATL firma 60 GWh sodio-ion con HyperStrong, mayor contrato de la historia. Desempeño en frío: ventaja para Cuyo/Patagonia. Score: 8.0. Fuente: Electrek / ESS News, 27 abr-8 may 2026',ts:Date.now()}],snapshots:[],ts:Date.now()},
 ];
 
-function loadState(){try{const r=JSON.parse(localStorage.getItem(SK));if(r&&r.signals&&r.dims)return r;}catch(e){}return{signals:JSON.parse(JSON.stringify(SIGS_DEF)),dims:JSON.parse(JSON.stringify(DIMS_DEF))};}
-function saveState(){localStorage.setItem(SK,JSON.stringify({signals,dims}));}
+function loadState(){
+  try{
+    const r=JSON.parse(localStorage.getItem(SK));
+    if(r&&r.signals&&r.dims){
+      if(r.dataVersion===DATA_VERSION) return r;
+      // Versión nueva detectada: mezclar señales nuevas sin perder comentarios del usuario
+      const saved=r;
+      const merged=JSON.parse(JSON.stringify(SIGS_DEF));
+      merged.forEach(s=>{
+        const prev=saved.signals.find(x=>x.id===s.id);
+        if(prev){
+          s.comentarios=prev.comentarios||[];
+          // Preservar snapshots del usuario si existen
+          if(prev.snapshots&&prev.snapshots.length>0) s.snapshots=prev.snapshots;
+        }
+      });
+      return{signals:merged,dims:JSON.parse(JSON.stringify(DIMS_DEF)),dataVersion:DATA_VERSION};
+    }
+  }catch(e){}
+  return{signals:JSON.parse(JSON.stringify(SIGS_DEF)),dims:JSON.parse(JSON.stringify(DIMS_DEF)),dataVersion:DATA_VERSION};
+}
+function saveState(){localStorage.setItem(SK,JSON.stringify({signals,dims,dataVersion:DATA_VERSION}));}
 let {signals,dims}=loadState();
 let curFilter='all',curSearch='',curSort='score',selId=null,curView='radar';
 let openDims=new Set();
