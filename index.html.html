@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Radar Nuevas Energías — Distrocuyo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0d14;--surf:#13161f;--surf2:#1a1e2b;--surf3:#222638;
+  --b1:rgba(255,255,255,0.06);--b2:rgba(255,255,255,0.11);--b3:rgba(255,255,255,0.2);
+  --txt:#dde2f0;--mut:#5a6080;--mut2:#8890aa;
+  --blue:#3d8ef0;--teal:#00c9a7;--amber:#f5a623;--red:#e84855;
+  --f1:#f5a623;--f2:#3d8ef0;--f3:#00c9a7;--fd:#e84855;
+  --fh:"Space Grotesk",sans-serif;--fb:"DM Sans",sans-serif;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--txt);font-family:var(--fb);font-size:13px}
+
+/* LAYOUT */
+.shell{display:flex;flex-direction:column;height:100vh}
+.hdr{background:var(--surf);border-bottom:1px solid var(--b2);display:flex;align-items:center;padding:0 16px;gap:10px;height:52px;flex-shrink:0}
+.body-row{display:flex;flex:1;overflow:hidden;min-height:0}
+.sidebar{background:var(--surf);border-right:1px solid var(--b1);width:224px;flex-shrink:0;overflow-y:auto;padding:10px 0}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.toolbar{background:var(--surf);border-bottom:1px solid var(--b1);padding:6px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;height:38px}
+.sbar{display:flex;flex-shrink:0;background:var(--surf);border-bottom:1px solid var(--b1);height:30px}
+.content{flex:1;overflow:hidden;position:relative;min-height:0}
+.panel{background:var(--surf);border-left:1px solid var(--b1);width:288px;flex-shrink:0;overflow-y:auto}
+
+/* RADAR — SVG fills content area */
+#radarView{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center}
+#radarView.hidden{display:none}
+#radarSvg{display:block}
+
+/* HISTORY OVERLAY */
+.hist-overlay-btn{
+  position:absolute;top:8px;right:8px;z-index:10;
+  background:rgba(61,142,240,0.12);border:1px solid rgba(61,142,240,0.35);
+  color:var(--blue);border-radius:5px;padding:5px 11px;
+  font-size:10px;font-weight:600;font-family:var(--fh);cursor:pointer;
+  transition:all .2s;display:none;
+}
+.hist-overlay-btn:hover{background:rgba(61,142,240,0.22);box-shadow:0 0 10px rgba(61,142,240,0.2)}
+.hist-overlay-btn.active{background:rgba(0,201,167,0.12);border-color:rgba(0,201,167,0.4);color:var(--teal)}
+.hist-legend{
+  position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+  background:rgba(13,16,26,0.92);border:1px solid var(--b2);border-radius:6px;
+  padding:8px 14px;display:none;gap:16px;align-items:center;z-index:10;
+}
+.hist-legend.show{display:flex}
+.hist-legend-item{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--mut2)}
+.hist-legend-dot{width:10px;height:10px;border-radius:50%;border:2px solid;flex-shrink:0}
+
+/* TABLE */
+#tableView{position:absolute;top:0;left:0;right:0;bottom:0;overflow-y:auto;display:none}
+#tableView.show{display:block}
+table{width:100%;border-collapse:collapse}
+th{background:var(--surf);position:sticky;top:0;z-index:2;padding:7px 11px;text-align:left;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);border-bottom:1px solid var(--b2);cursor:pointer;white-space:nowrap}
+td{padding:7px 11px;border-bottom:1px solid var(--b1);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.02)}
+tr.sel td{background:rgba(61,142,240,.07)!important}
+tr{cursor:pointer}
+.tname{font-weight:500;color:var(--txt)}
+.tsub{font-size:11px;color:var(--mut);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* HEADER */
+.logo{display:flex;align-items:center;gap:8px}
+.logo img{height:26px;background:#fff;border-radius:4px;padding:2px 5px}
+.lpulse{width:7px;height:7px;border-radius:50%;background:var(--teal);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 3px var(--teal)}50%{box-shadow:0 0 9px var(--teal)}}
+.logo-txt{font-family:var(--fh);font-size:13px;font-weight:600;color:var(--mut2)}
+.hdr-sep{flex:1}
+.funnel{display:flex;align-items:center;gap:4px;font-size:11px;font-family:var(--fh)}
+.fstep{padding:2px 8px;border-radius:20px;border:1px solid transparent;color:var(--mut)}
+.fstep.act{color:var(--teal);border-color:rgba(0,201,167,.3);background:rgba(0,201,167,.08);font-weight:600}
+.farr{color:var(--b2)}
+.hbtn{border:1px solid var(--b2);background:transparent;color:var(--mut);border-radius:5px;padding:4px 10px;font-size:11px;font-family:var(--fh);cursor:pointer;white-space:nowrap}
+.hbtn:hover{color:var(--txt);border-color:var(--b3)}
+.hbtn.pri{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:600}
+
+/* SIDEBAR */
+.slbl{font-size:9px;font-weight:600;letter-spacing:.1em;color:var(--mut);text-transform:uppercase;padding:0 12px;margin:10px 0 4px}
+.si{padding:0 6px}
+.fb{width:100%;text-align:left;background:transparent;border:none;border-radius:5px;padding:5px 8px;color:var(--mut);font-size:12px;font-family:var(--fb);cursor:pointer;display:flex;align-items:center;gap:6px;margin:1px 0}
+.fb:hover{background:var(--surf2);color:var(--txt)}
+.fb.act{background:rgba(61,142,240,.1);color:var(--blue)}
+.fdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.fcnt{margin-left:auto;font-size:10px;background:var(--surf2);color:var(--mut);border-radius:8px;padding:1px 6px;font-family:var(--fh)}
+.dim-group{margin:1px 0}
+.dtoggle{width:100%;text-align:left;background:transparent;border:none;border-radius:5px;padding:5px 8px;color:var(--mut);font-size:12px;font-family:var(--fb);cursor:pointer;display:flex;align-items:center;gap:6px}
+.dtoggle:hover{background:var(--surf2);color:var(--txt)}
+.dtoggle.act{background:rgba(61,142,240,.1);color:var(--blue)}
+.darr{margin-left:auto;font-size:9px;transition:transform .18s;flex-shrink:0;color:var(--mut)}
+.darr.open{transform:rotate(90deg)}
+.dsigs{display:none;padding-left:12px;border-left:2px solid var(--b2);margin:2px 3px 3px 18px}
+.dsigs.open{display:block}
+.dsig{display:flex;align-items:center;gap:5px;padding:3px 5px;border-radius:4px;cursor:pointer}
+.dsig:hover{background:var(--surf2)}
+.dsig.sel{background:rgba(61,142,240,.08)}
+.dsig-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.dsig-name{font-size:11px;color:var(--mut2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dsig-name.sel{color:var(--txt);font-weight:500}
+.dsig-sc{font-size:10px;font-weight:600;font-family:var(--fh);flex-shrink:0}
+.fase-legend{padding:4px 12px 8px}
+.fase-row{display:flex;align-items:flex-start;gap:7px;padding:4px 0;font-size:10px;color:var(--mut2);border-bottom:1px solid var(--b1);line-height:1.4}
+.fase-row:last-child{border-bottom:none}
+.fase-ring{width:10px;height:10px;border-radius:50%;border:1.5px solid;flex-shrink:0;margin-top:2px}
+
+/* TOOLBAR */
+.vtog{display:flex;background:var(--surf2);border-radius:5px;padding:2px;gap:1px}
+.vbtn{background:transparent;border:none;border-radius:3px;padding:3px 10px;color:var(--mut);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--fh)}
+.vbtn.act{background:var(--blue);color:#fff}
+.srch{flex:1;background:var(--surf2);border:1px solid var(--b2);border-radius:5px;padding:4px 10px;color:var(--txt);font-size:12px;font-family:var(--fb);outline:none}
+.srch::placeholder{color:var(--mut)}
+.srt{background:var(--surf2);border:1px solid var(--b2);border-radius:5px;padding:4px 8px;color:var(--mut);font-size:11px;font-family:var(--fb);outline:none}
+
+/* STATS BAR */
+.sv{display:flex;flex-direction:column;justify-content:center;padding:0 12px;border-right:1px solid var(--b1)}
+.sv:last-child{border-right:none}
+.svv{font-size:14px;font-weight:700;font-family:var(--fh);line-height:1}
+.svl{font-size:8px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em}
+
+/* PANEL */
+.pempty{padding:40px 20px;text-align:center;color:var(--mut)}
+.pempty-ico{font-size:28px;opacity:.2;margin-bottom:8px}
+.phdr{padding:13px 14px;border-bottom:1px solid var(--b1);display:none}
+.phdr.show{display:block}
+.ptag{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.ptitle{font-family:var(--fh);font-size:14px;font-weight:600;margin-bottom:3px;line-height:1.3}
+.pdesc{font-size:12px;color:var(--mut);line-height:1.5}
+.pbody{padding:11px 13px;display:none;flex-direction:column;gap:10px}
+.pbody.show{display:flex}
+.ptabs{display:flex;gap:2px;background:var(--surf2);border-radius:5px;padding:2px}
+.ptab{flex:1;background:transparent;border:none;border-radius:3px;padding:4px;font-size:11px;font-weight:600;color:var(--mut);cursor:pointer;font-family:var(--fh);text-align:center}
+.ptab.act{background:var(--surf3);color:var(--txt)}
+.ptc{display:none}
+.ptc.act{display:block}
+.mlbl{font-size:9px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);margin-bottom:5px}
+.mrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px}
+.mname{font-size:11px;color:var(--txt)}
+.mval{font-size:12px;font-weight:600;font-family:var(--fh)}
+.prog{height:3px;background:var(--b2);border-radius:2px;overflow:hidden;margin-top:2px;margin-bottom:6px}
+.progf{height:100%;border-radius:2px}
+.cchip{display:inline-block;font-size:10px;background:var(--surf2);border:1px solid var(--b2);border-radius:3px;padding:2px 7px;color:var(--mut);margin:2px}
+.risk-item{display:flex;align-items:flex-start;gap:6px;margin-bottom:4px}
+.risk-ic{width:14px;height:14px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0;margin-top:1px}
+.risk-ic.hi{background:rgba(232,72,85,.15);color:#e84855}
+.risk-ic.md{background:rgba(245,166,35,.15);color:#f5a623}
+.risk-ic.lo{background:rgba(0,201,167,.15);color:#00c9a7}
+.risk-txt{font-size:11px;color:var(--mut);line-height:1.4}
+.abtn{width:100%;padding:7px;border-radius:5px;border:1px solid;font-size:11px;font-weight:600;font-family:var(--fh);cursor:pointer;margin-top:3px;text-align:center;background:transparent}
+.abtn:hover{opacity:.8}
+.score-big{display:flex;align-items:baseline;gap:4px;margin:4px 0 8px}
+.score-big .num{font-size:24px;font-weight:700;font-family:var(--fh)}
+.score-big .den{font-size:12px;color:var(--mut)}
+.fase-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:600;font-family:var(--fh);padding:3px 9px;border-radius:16px;border:1px solid;margin-bottom:7px}
+.notes-area{width:100%;background:var(--surf2);border:1px solid var(--b2);border-radius:5px;padding:7px;color:var(--txt);font-size:12px;font-family:var(--fb);outline:none;resize:vertical;min-height:70px;line-height:1.5}
+.btn-save-note{background:var(--blue);color:#fff;border:none;border-radius:4px;padding:5px 12px;font-size:11px;font-weight:600;font-family:var(--fh);cursor:pointer;margin-top:4px}
+.comment-item{padding:8px 0;border-bottom:1px solid var(--b1);position:relative}
+.comment-item:last-child{border-bottom:none}
+.comment-hdr{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.comment-av{width:20px;height:20px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;flex-shrink:0}
+.comment-dt{font-size:10px;color:var(--mut);font-family:var(--fh)}
+.comment-txt{font-size:12px;color:var(--txt);line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.comment-del{position:absolute;top:8px;right:0;background:transparent;border:none;color:var(--mut);cursor:pointer;font-size:11px;opacity:0;padding:2px 4px;border-radius:3px}
+.comment-item:hover .comment-del{opacity:1}
+.comment-del:hover{color:var(--red)}
+.hist-item{display:flex;gap:7px;padding:5px 0;border-bottom:1px solid var(--b1)}
+.hist-item:last-child{border-bottom:none}
+.hdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.hact{font-size:11px;color:var(--txt);font-weight:500}
+.htime{font-size:10px;color:var(--mut);margin-top:1px}
+
+/* TOOLTIP */
+.rtip{position:fixed;background:var(--surf2);border:1px solid var(--b2);border-radius:7px;padding:10px 12px;pointer-events:none;z-index:300;display:none;min-width:190px;max-width:240px}
+.rtip-name{font-weight:600;color:var(--txt);margin-bottom:4px;font-family:var(--fh);font-size:13px}
+.rtip-row{color:var(--mut);font-size:11px;line-height:1.7}
+.rtip-score{font-size:14px;font-weight:700;font-family:var(--fh);margin-top:4px}
+
+/* MODAL */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:400;display:none;align-items:center;justify-content:center}
+.mbg.open{display:flex}
+.modal{background:var(--surf);border:1px solid var(--b2);border-radius:10px;padding:20px;width:540px;max-width:95vw;max-height:92vh;overflow-y:auto}
+.mtitle{font-family:var(--fh);font-size:16px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.mclose{background:transparent;border:none;color:var(--mut);font-size:18px;cursor:pointer}
+.fl{margin-bottom:11px}
+.fl label{font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px;display:block}
+.fi,.fsel,.fta{width:100%;background:var(--surf2);border:1px solid var(--b2);border-radius:5px;padding:6px 10px;color:var(--txt);font-size:12px;font-family:var(--fb);outline:none}
+.fi:focus,.fsel:focus,.fta:focus{border-color:var(--blue)}
+.fta{min-height:52px;resize:vertical}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.slw{display:flex;align-items:center;gap:8px}
+.slw input[type=range]{flex:1;accent-color:var(--blue)}
+.slv{min-width:22px;text-align:center;font-size:13px;font-weight:600;color:var(--blue);font-family:var(--fh)}
+.macts{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
+.btn-cancel{background:transparent;border:1px solid var(--b2);color:var(--mut);border-radius:5px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:var(--fh)}
+.btn-save{background:var(--blue);border:none;color:#fff;border-radius:5px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--fh)}
+.score-preview{background:var(--surf2);border-radius:5px;padding:7px 10px;font-size:11px;color:var(--mut);margin-bottom:10px}
+.dim-item{display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--b1)}
+.dim-item:last-child{border-bottom:none}
+.dim-color{width:11px;height:11px;border-radius:2px;flex-shrink:0}
+.dim-name-input{flex:1;background:var(--surf2);border:1px solid var(--b2);border-radius:4px;padding:4px 8px;color:var(--txt);font-size:12px;font-family:var(--fb);outline:none}
+.btn-rm{background:transparent;border:none;color:var(--mut);cursor:pointer;font-size:13px;padding:0 3px}
+.btn-rm:hover{color:var(--red)}
+.btn-add-dim{width:100%;margin-top:7px;background:rgba(61,142,240,.07);border:1px dashed rgba(61,142,240,.3);color:var(--blue);border-radius:5px;padding:6px;font-size:12px;font-weight:600;font-family:var(--fh);cursor:pointer}
+.notif{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--surf2);border:1px solid var(--b2);border-radius:7px;padding:8px 16px;font-size:12px;color:var(--txt);z-index:500;opacity:0;transition:opacity .25s;pointer-events:none;font-family:var(--fh);font-weight:500;white-space:nowrap}
+.notif.show{opacity:1}
+
+/* SVG RADAR STYLES */
+.sig-dot{cursor:pointer}
+.sig-dot:hover circle:first-child{opacity:.18 !important}
+
+@media print{
+  body{background:#fff;color:#111;overflow:auto}
+  .shell{display:none}
+  #printarea{display:block!important}
+}
+#printarea{display:none;padding:26px;font-family:Arial,sans-serif;color:#111;max-width:820px;margin:0 auto}
+.pr-logo{font-size:10px;color:#888;margin-bottom:16px;border-bottom:1px solid #ddd;padding-bottom:8px}
+.pr-title{font-size:19px;font-weight:700;margin-bottom:3px}
+.pr-sub{font-size:12px;color:#555;margin-bottom:18px}
+.pr-sec{margin-bottom:16px}
+.pr-sec h3{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#888;margin-bottom:7px;border-bottom:1px solid #eee;padding-bottom:3px}
+.pr-drow{display:flex;align-items:center;gap:9px;margin-bottom:6px;font-size:12px}
+.pr-bar{flex:1;height:5px;background:#eee;border-radius:2px;overflow:hidden}
+.pr-barf{height:100%;border-radius:2px}
+.pr-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px}
+.pr-chip{font-size:11px;border:1px solid #ddd;border-radius:3px;padding:2px 7px;color:#555}
+.pr-rrow{display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;font-size:12px}
+.pr-rbadge{font-size:10px;font-weight:700;padding:1px 5px;border-radius:2px}
+.pr-hist{font-size:11px;color:#555;border-left:3px solid #ddd;padding-left:9px;line-height:1.8}
+.pr-footer{margin-top:24px;font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:8px;display:flex;justify-content:space-between}
+</style>
+</head>
+<body>
+<div id="printarea"><div id="printpage"></div></div>
+
+<div class="shell">
+  <!-- HEADER -->
+  <header class="hdr">
+    <div class="logo">
+      <img src="data:image/png;base64,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" alt="Distrocuyo">
+      <div class="lpulse"></div>
+      <span class="logo-txt">Radar Nuevas Energías</span>
+    </div>
+    <div class="funnel">
+      <span class="fstep act">Vigilancia Tecnológica</span><span class="farr">›</span>
+      <span class="fstep">Estudio de Mercado</span><span class="farr">›</span>
+      <span class="fstep">Business Case</span><span class="farr">›</span>
+      <span class="fstep">Decisión Dirección</span>
+    </div>
+    <div class="hdr-sep"></div>
+    <button class="hbtn" onclick="openDimModal()">⚙ Dimensiones</button>
+    <button class="hbtn" onclick="importData()">↑ Importar</button>
+    <button class="hbtn" onclick="exportData()">↓ Exportar</button>
+    <button class="hbtn pri" onclick="openModal()">+ Nueva señal</button>
+  </header>
+
+  <div class="body-row">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="slbl">Dimensión</div>
+      <div class="si" id="sidebarDims"></div>
+      <div class="slbl">Fase</div>
+      <div class="si" id="sidebarFases"></div>
+      <div class="slbl">Leyenda</div>
+      <div class="fase-legend">
+        <div class="fase-row"><div class="fase-ring" style="border-color:#00c9a7"></div><span><strong style="color:#00c9a7">Interior (9-10)</strong><br>Fase 3 — Business Case</span></div>
+        <div class="fase-row"><div class="fase-ring" style="border-color:#3d8ef0"></div><span><strong style="color:#3d8ef0">Medio (5-8)</strong><br>Fase 2 — En Estudio</span></div>
+        <div class="fase-row"><div class="fase-ring" style="border-color:#f5a623"></div><span><strong style="color:#f5a623">Exterior (2-4)</strong><br>Fase 1 — Monitoreando</span></div>
+        <div class="fase-row"><div class="fase-ring" style="border-color:#e84855"></div><span><strong style="color:#e84855">Fuera (≤1)</strong><br>Descartada</span></div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <div class="toolbar">
+        <div class="vtog">
+          <button class="vbtn act" id="btnRadar" onclick="setView('radar')">Radar</button>
+          <button class="vbtn" id="btnTabla" onclick="setView('tabla')">Tabla</button>
+        </div>
+        <input class="srch" placeholder="Buscar señal..." oninput="doSearch(this.value)">
+        <select class="srt" onchange="setSort(this.value)">
+          <option value="score">Puntaje ↓</option>
+          <option value="nombre">Nombre A-Z</option>
+          <option value="trl">TRL ↓</option>
+          <option value="reciente">Más reciente</option>
+        </select>
+      </div>
+      <div class="sbar" id="statsBar"></div>
+      <div class="content">
+        <!-- RADAR: SVG fijo, solo se modifican elementos internos -->
+        <div id="radarView">
+          <button class="hist-overlay-btn" id="histBtn" onclick="toggleHistOverlay()">⟳ Ver evolución</button>
+          <div class="hist-legend" id="histLegend">
+            <div class="hist-legend-item"><div class="hist-legend-dot" style="background:rgba(245,166,35,0.3);border-color:#f5a623"></div>Fase 1 — Vigilancia</div>
+            <div class="hist-legend-item"><div class="hist-legend-dot" style="background:rgba(61,142,240,0.3);border-color:#3d8ef0"></div>Fase 2 — En Estudio</div>
+            <div class="hist-legend-item"><div class="hist-legend-dot" style="background:rgba(0,201,167,0.3);border-color:#00c9a7"></div>Fase 3 — Business Case</div>
+            <div class="hist-legend-item"><div style="width:24px;height:2px;background:rgba(255,255,255,0.4);border-radius:1px"></div>Trayectoria</div>
+          </div>
+          <svg id="radarSvg" viewBox="0 0 600 600" style="width:100%;height:100%;max-width:600px;max-height:600px">
+            <g id="rSlices"></g>
+            <g id="rRings"></g>
+            <g id="rLines"></g>
+            <g id="rLabels"></g>
+            <g id="rRingLabels"></g>
+            <g id="rDots"></g>
+            <g id="rHistory"></g>
+          </svg>
+        </div>
+        <!-- TABLA -->
+        <div id="tableView">
+          <table><thead><tr>
+            <th onclick="setSort('nombre')">Señal</th>
+            <th onclick="setSort('score')">Puntaje</th>
+            <th>Dimensión</th>
+            <th onclick="setSort('trl')">TRL</th>
+            <th>Horizonte</th>
+            <th>Riesgo Reg.</th>
+            <th>Fase</th>
+            <th style="width:30px"></th>
+          </tr></thead>
+          <tbody id="tableBody"></tbody></table>
+        </div>
+      </div>
+    </main>
+
+    <!-- PANEL -->
+    <aside class="panel">
+      <div class="pempty" id="pempty">
+        <div class="pempty-ico">◎</div>
+        <div style="font-size:12px;font-weight:500">Seleccioná una señal</div>
+        <div style="font-size:11px;color:var(--mut);margin-top:3px">Clic en el radar o la tabla</div>
+      </div>
+      <div class="phdr" id="phdr">
+        <div class="ptag" id="ptag"></div>
+        <div class="ptitle" id="ptitle"></div>
+        <div class="pdesc" id="pdesc"></div>
+      </div>
+      <div class="pbody" id="pbody">
+        <div class="ptabs">
+          <button class="ptab act" onclick="setPTab('analisis',this)">Análisis</button>
+          <button class="ptab" onclick="setPTab('notas',this)">Notas</button>
+          <button class="ptab" onclick="setPTab('historial',this)">Historial</button>
+        </div>
+        <div class="ptc act" id="ptc-analisis"></div>
+        <div class="ptc" id="ptc-notas"></div>
+        <div class="ptc" id="ptc-historial"></div>
+        <div style="border-top:1px solid var(--b1);padding-top:10px">
+          <div class="mlbl">Acciones</div>
+          <button class="abtn" onclick="openModal(selId)" style="color:var(--txt);border-color:var(--b2)">✎ Editar señal y puntajes</button>
+          <button class="abtn" onclick="toggleHistOverlay()" id="panelHistBtn" style="color:var(--teal);border-color:rgba(0,201,167,0.3);margin-top:3px">⟳ Ver evolución en radar</button>
+          <button class="abtn" onclick="clearSnapshots()" style="color:var(--mut2);border-color:var(--b1);margin-top:3px">⌫ Borrar historial de evolución</button>
+          <button class="abtn" onclick="printSignal()" style="color:var(--blue);border-color:rgba(61,142,240,.3);margin-top:3px">⬇ Generar ficha PDF</button>
+          <button class="abtn" onclick="deleteSignal()" style="color:var(--red);border-color:rgba(232,72,85,.3);margin-top:3px">✕ Eliminar señal</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- TOOLTIP -->
+<div class="rtip" id="rtip">
+  <div class="rtip-name" id="rtip-name"></div>
+  <div class="rtip-row" id="rtip-rows"></div>
+  <div class="rtip-score" id="rtip-score"></div>
+</div>
+
+<!-- MODAL SEÑAL -->
+<div class="mbg" id="modalSignal">
+  <div class="modal">
+    <div class="mtitle"><span id="modalTitle">Nueva Señal</span><button class="mclose" onclick="closeModal('modalSignal')">✕</button></div>
+    <div class="fl"><label>Nombre</label><input class="fi" id="f-nombre" placeholder="Ej: Electrólisis PEM para hidrógeno verde"></div>
+    <div class="fl"><label>Descripción</label><textarea class="fta" id="f-desc" placeholder="Describí la tecnología y su relevancia..."></textarea></div>
+    <div class="fgrid">
+      <div class="fl"><label>Dimensión</label><select class="fsel" id="f-dim"></select></div>
+      <div class="fl"><label>Horizonte</label><select class="fsel" id="f-horizonte"><option value="h1">Corto (0-2 años)</option><option value="h2">Medio (2-5 años)</option><option value="h3">Largo (5+ años)</option></select></div>
+    </div>
+    <div class="fl"><label>Potencial estratégico (1-10) — 35%</label><div class="slw"><input type="range" min="1" max="10" value="5" id="f-estrategico" oninput="svupd('estrategico',this.value)"><span class="slv" id="sv-estrategico">5</span></div></div>
+    <div class="fl"><label>Oportunidad de mercado (1-10) — 30%</label><div class="slw"><input type="range" min="1" max="10" value="5" id="f-mercado" oninput="svupd('mercado',this.value)"><span class="slv" id="sv-mercado">5</span></div></div>
+    <div class="fl"><label>Madurez TRL (1-9) — 20%</label><div class="slw"><input type="range" min="1" max="9" value="4" id="f-trl" oninput="svupd('trl',this.value)"><span class="slv" id="sv-trl">4</span></div></div>
+    <div class="fl"><label>Riesgo regulatorio (1=bajo · 10=alto) — 15% inv.</label><div class="slw"><input type="range" min="1" max="10" value="5" id="f-regulatorio" oninput="svupd('regulatorio',this.value)"><span class="slv" id="sv-regulatorio">5</span></div></div>
+    <div class="score-preview" id="scorePreview"></div>
+    <div class="fl"><label>Competidores (separados por coma)</label><input class="fi" id="f-comp" placeholder="Ej: Siemens, ABB, CATL"></div>
+    <div class="fl"><label>Barreras y riesgos (una por línea)</label><textarea class="fta" id="f-riesgos" placeholder="Falta de marco regulatorio&#10;Costo de capex elevado"></textarea></div>
+    <input type="hidden" id="f-editid" value="">
+    <div class="macts"><button class="btn-cancel" onclick="closeModal('modalSignal')">Cancelar</button><button class="btn-save" onclick="saveSignal()">Guardar</button></div>
+  </div>
+</div>
+
+<!-- MODAL DIMENSIONES -->
+<div class="mbg" id="modalDims">
+  <div class="modal" style="width:460px">
+    <div class="mtitle"><span>Editar dimensiones del radar</span><button class="mclose" onclick="closeModal('modalDims')">✕</button></div>
+    <div style="font-size:12px;color:var(--mut);margin-bottom:8px">Editá nombres, agregá o eliminá porciones. El radar se actualiza al guardar.</div>
+    <div id="dimPreviewTxt" style="font-size:11px;color:var(--blue);font-family:var(--fh);margin-bottom:10px"></div>
+    <div id="dimList"></div>
+    <button class="btn-add-dim" onclick="addDimRow()">+ Agregar dimensión</button>
+    <div class="macts"><button class="btn-cancel" onclick="closeModal('modalDims')">Cancelar</button><button class="btn-save" onclick="saveDims()">Guardar dimensiones</button></div>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+const SK='radar_v4';
+const DIMS_DEF=[
+  {id:'hidrogeno',name:'Hidrógeno y e-fuels',color:'#3d8ef0'},
+  {id:'almacenamiento',name:'Almacenamiento de Energía',color:'#00c9a7'},
+  {id:'datacenters',name:'Data Centers',color:'#9b72f5'},
+  {id:'movilidad',name:'Movilidad',color:'#f5a623'},
+  {id:'mineria',name:'Minería',color:'#e84855'},
+  {id:'generacion',name:'Generación',color:'#4caf6e'},
+  {id:'tecnologia',name:'Tecnología y Redes',color:'#ff7eb3'},
+  {id:'otros',name:'Otros',color:'#8ecde6'},
+];
+const SIGS_DEF=[
+  {id:1,nombre:'Electrólisis PEM hidrógeno verde',desc:'Producción de H₂ con energía renovable. Alta pureza, respuesta rápida.',dim:'hidrogeno',horizonte:'h2',estrategico:9,mercado:8,trl:6,regulatorio:6,competidores:['Nel ASA','ITM Power','Plug Power'],riesgos:[{n:'H',t:'Sin normativa específica en Argentina'},{n:'M',t:'Costo de pila aún elevado'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-2160000000}],ts:Date.now()-2160000000},
+  {id:2,nombre:'Almacenamiento H₂ en cavernas salinas',desc:'Almacenamiento subterráneo de hidrógeno a gran escala.',dim:'hidrogeno',horizonte:'h3',estrategico:7,mercado:7,trl:5,regulatorio:7,competidores:['Equinor','EDF','RWE'],riesgos:[{n:'H',t:'Geología local no validada'},{n:'M',t:'Marco regulatorio inexistente'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-1296000000}],ts:Date.now()-1296000000},
+  {id:3,nombre:'Baterías de larga duración (LDES)',desc:'Almacenamiento 8-24h. Hierro-aire, vanadio flow, zinc-bromo.',dim:'almacenamiento',horizonte:'h2',estrategico:9,mercado:9,trl:5,regulatorio:3,competidores:['Form Energy','ESS Inc','VRB Energy'],riesgos:[{n:'M',t:'Disponibilidad de materiales críticos'},{n:'L',t:'Mercado ancilares en crecimiento'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-864000000}],ts:Date.now()-864000000},
+  {id:4,nombre:'Baterías de ión sodio',desc:'Alternativa al litio. Recursos más abundantes y bajo costo.',dim:'almacenamiento',horizonte:'h1',estrategico:8,mercado:8,trl:8,regulatorio:3,competidores:['CATL + HyperStrong','HiNa Battery','Altris / Faradion'],riesgos:[{n:'H',t:'Cadena de suministro concentrada en China'},{n:'M',t:'Certificaciones técnicas no definidas en AR'},{n:'L',t:'Compatible con marcos BESS existentes'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-1036800000},{accion:'ACTUALIZACIÓN 12/05/2026 — CATL firma 60 GWh con HyperStrong, mayor contrato sodio-ion del mundo. TRL sube a 8, horizonte a h1, score sube de 6.6 a 8.0. Fuente: Electrek / ESS News, 27 abr–8 may 2026',ts:Date.now()}],snapshots:[],ts:Date.now()-1036800000},
+  {id:5,nombre:'Data Centers 100% renovable',desc:'Centros de datos con acuerdos PPA de energía limpia.',dim:'datacenters',horizonte:'h1',estrategico:8,mercado:9,trl:8,regulatorio:3,competidores:['Microsoft','Google','Amazon AWS'],riesgos:[{n:'L',t:'Tendencia global consolidada'},{n:'M',t:'Disponibilidad de terrenos y red'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-432000000}],ts:Date.now()-432000000},
+  {id:6,nombre:'Cooling eficiente para data centers',desc:'Sistemas de enfriamiento de alta eficiencia: líquido, inmersión.',dim:'datacenters',horizonte:'h2',estrategico:6,mercado:7,trl:6,regulatorio:2,competidores:['Vertiv','Schneider','Rittal'],riesgos:[{n:'L',t:'Sin barreras regulatorias relevantes'},{n:'M',t:'Inversión inicial alta'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-691200000}],ts:Date.now()-691200000},
+  {id:7,nombre:'Vehículo eléctrico + V2G',desc:'VE como activo de red. Servicio de frecuencia y backup.',dim:'movilidad',horizonte:'h2',estrategico:7,mercado:7,trl:5,regulatorio:7,competidores:['Nissan','Nuvve','Enel X'],riesgos:[{n:'H',t:'Sin marco regulatorio V2G en Argentina'},{n:'M',t:'Penetración de VE aún baja'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-1555200000}],ts:Date.now()-1555200000},
+  {id:8,nombre:'Electromovilidad pesada (camiones H₂)',desc:'Camiones de larga distancia con celda de combustible.',dim:'movilidad',horizonte:'h3',estrategico:6,mercado:6,trl:4,regulatorio:6,competidores:['Hyundai','Nikola','IVECO'],riesgos:[{n:'H',t:'Infraestructura de carga inexistente'},{n:'M',t:'TRL bajo en escala comercial'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-2592000000}],ts:Date.now()-2592000000},
+  {id:9,nombre:'Minería con energía renovable + H₂',desc:'Operaciones mineras con solar+storage+H₂ como backup.',dim:'mineria',horizonte:'h2',estrategico:9,mercado:8,trl:6,regulatorio:3,competidores:['BHP','Anglo American','Fortescue'],riesgos:[{n:'L',t:'Alta demanda interna en sector'},{n:'M',t:'Logística de hidrógeno en sitio remoto'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-345600000}],ts:Date.now()-345600000},
+  {id:10,nombre:'Solar FV flotante (Agrivoltaica)',desc:'Paneles sobre cuerpos de agua o cultivos.',dim:'generacion',horizonte:'h1',estrategico:8,mercado:9,trl:7,regulatorio:3,competidores:['Ciel & Terre','BayWa r.e.','Sun Water'],riesgos:[{n:'M',t:'Marco regulatorio provincial fragmentado'},{n:'L',t:'Tecnología probada en Europa'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-1296000000}],ts:Date.now()-1296000000},
+  {id:11,nombre:'Eólica offshore',desc:'Parques marinos. Menor intermitencia y mayor factor de planta.',dim:'generacion',horizonte:'h2',estrategico:7,mercado:8,trl:8,regulatorio:7,competidores:['Ørsted','Vestas','GE Vernova'],riesgos:[{n:'H',t:'Sin regulación offshore en Argentina'},{n:'M',t:'Costos de instalación muy altos'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-1728000000}],ts:Date.now()-1728000000},
+  {id:12,nombre:'Smart Grid y microrredes con IA',desc:'Automatización y optimización predictiva de redes locales.',dim:'tecnologia',horizonte:'h1',estrategico:8,mercado:8,trl:7,regulatorio:5,competidores:['Schneider','Siemens','ABB'],riesgos:[{n:'M',t:'Alta inversión en infraestructura de datos'},{n:'M',t:'Integración con sistemas legacy'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-604800000}],ts:Date.now()-604800000},
+  {id:13,nombre:'Captura directa de CO₂ (DAC)',desc:'Captura de CO₂ atmosférico. Créditos de carbono de alta integridad.',dim:'otros',horizonte:'h3',estrategico:2,mercado:3,trl:4,regulatorio:4,competidores:['Climeworks','Carbon Engineering'],riesgos:[{n:'H',t:'Costo energético muy elevado'},{n:'M',t:'Mercado de créditos en formación'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-3024000000}],snapshots:[],ts:Date.now()-3024000000},
+  {id:14,nombre:'Paridad firme renovables + storage',desc:'Solar/eólico+BESS supera en costo a carbón y gas para generación 24/7.',dim:'generacion',horizonte:'h1',estrategico:9,mercado:9,trl:9,regulatorio:2,competidores:['Al Dhafra / Masdar (EAU)','NextEra Energy (EE.UU.)','Enel Green Power (LATAM)'],riesgos:[{n:'M',t:'Financiamiento en mercados emergentes'},{n:'M',t:'Marco regulatorio PPA firme en AR incompleto'},{n:'L',t:'Tecnología y cadena de suministro maduros'}],comentarios:[],historial:[{accion:'Señal creada 12/05/2026 — IRENA confirma USD 54-82/MWh para solar+storage firme, por debajo del carbón nuevo (USD 70-85) y gas (>USD 100). Score: 8.5. Fuente: IRENA 24/7 Renewables, 6 may 2026',ts:Date.now()}],snapshots:[],ts:Date.now()},
+  {id:15,nombre:'Sodio-ion a escala comercial (CATL 60 GWh)',desc:'CATL firma 60 GWh con HyperStrong — sodio-ion entra al mercado BESS grid-scale.',dim:'almacenamiento',horizonte:'h1',estrategico:8,mercado:8,trl:8,regulatorio:3,competidores:['CATL + HyperStrong (China)','HiNa Battery (China)','Altris / Faradion (Europa)'],riesgos:[{n:'H',t:'Cadena de suministro concentrada en China'},{n:'M',t:'Certificaciones técnicas sodio-ion en AR pendientes'},{n:'L',t:'Marco regulatorio BESS existente — sin cambios'}],comentarios:[],historial:[{accion:'Señal creada 12/05/2026 — CATL firma 60 GWh sodio-ion con HyperStrong, mayor contrato de la historia. Desempeño en frío: ventaja para Cuyo/Patagonia. Score: 8.0. Fuente: Electrek / ESS News, 27 abr-8 may 2026',ts:Date.now()}],snapshots:[],ts:Date.now()},
+];
+
+function loadState(){try{const r=JSON.parse(localStorage.getItem(SK));if(r&&r.signals&&r.dims)return r;}catch(e){}return{signals:JSON.parse(JSON.stringify(SIGS_DEF)),dims:JSON.parse(JSON.stringify(DIMS_DEF))};}
+function saveState(){localStorage.setItem(SK,JSON.stringify({signals,dims}));}
+let {signals,dims}=loadState();
+let curFilter='all',curSearch='',curSort='score',selId=null,curView='radar';
+let openDims=new Set();
+
+function calcScore(s){return Math.round((s.estrategico*.35+s.mercado*.30+(s.trl/9*10)*.20+(10-s.regulatorio)*.15)*10)/10;}
+function getFase(sc){
+  if(sc>=9)return{label:'Fase 3 — Business Case',short:'Prioritaria',color:'#00c9a7',ring:1};
+  if(sc>=5)return{label:'Fase 2 — Estudio de Mercado',short:'En Estudio',color:'#3d8ef0',ring:2};
+  if(sc>=2)return{label:'Fase 1 — Monitoreando',short:'Monitoreando',color:'#f5a623',ring:3};
+  return{label:'Descartada',short:'Descartada',color:'#e84855',ring:0};
+}
+function dimById(id){return dims.find(d=>d.id===id)||dims[0];}
+function fmtDate(ts){return new Date(ts).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+const HOR_L={h1:'0-2 años',h2:'2-5 años',h3:'5+ años'};
+const TRL_D=['Principio básico','Concepto tecnológico','Prueba de concepto','Validación en lab','Validación entorno relevante','Demo prototipo','Demo operacional','Sistema completo','Misión probada'];
+
+function getFiltered(){
+  return signals.filter(s=>{
+    if(curFilter==='all')return true;
+    if(dims.find(d=>d.id===curFilter))return s.dim===curFilter;
+    if(curFilter==='fase3')return getFase(calcScore(s)).ring===1;
+    if(curFilter==='fase2')return getFase(calcScore(s)).ring===2;
+    if(curFilter==='fase1')return getFase(calcScore(s)).ring===3;
+    if(curFilter==='fase0')return getFase(calcScore(s)).ring===0;
+    return true;
+  }).filter(s=>!curSearch||s.nombre.toLowerCase().includes(curSearch.toLowerCase())||s.desc.toLowerCase().includes(curSearch.toLowerCase()))
+  .sort((a,b)=>{
+    if(curSort==='score')return calcScore(b)-calcScore(a);
+    if(curSort==='nombre')return a.nombre.localeCompare(b.nombre,'es');
+    if(curSort==='trl')return b.trl-a.trl;
+    if(curSort==='reciente')return b.ts-a.ts;
+    return 0;
+  });
+}
+
+// ── RADAR SVG (viewBox fijo 600x600, solo se actualizan los grupos internos) ──
+const CX=300,CY=300,R=230;
+const r1=R*.28,r2=R*.58,r3=R*.92;
+
+function renderRadar(){
+  const n=dims.length;
+  const sa=(2*Math.PI)/n;
+
+  // Slices
+  let slices='';
+  dims.forEach((d,i)=>{
+    const a0=-Math.PI/2+i*sa, a1=a0+sa;
+    const x0=CX+(r3+2)*Math.cos(a0), y0=CY+(r3+2)*Math.sin(a0);
+    const x1=CX+(r3+2)*Math.cos(a1), y1=CY+(r3+2)*Math.sin(a1);
+    slices+=`<path d="M${CX},${CY} L${x0.toFixed(1)},${y0.toFixed(1)} A${r3+2},${r3+2} 0 0,1 ${x1.toFixed(1)},${y1.toFixed(1)} Z" fill="${d.color}" opacity="${i%2===0?.08:.04}"/>`;
+  });
+  document.getElementById('rSlices').innerHTML=slices;
+
+  // Rings
+  document.getElementById('rRings').innerHTML=
+    `<circle cx="${CX}" cy="${CY}" r="${r3}" fill="none" stroke="rgba(245,166,35,0.3)" stroke-width="1.5" stroke-dasharray="3 4"/>
+     <circle cx="${CX}" cy="${CY}" r="${r2}" fill="none" stroke="rgba(61,142,240,0.3)" stroke-width="1.5" stroke-dasharray="3 4"/>
+     <circle cx="${CX}" cy="${CY}" r="${r1}" fill="none" stroke="rgba(0,201,167,0.35)" stroke-width="1.5" stroke-dasharray="3 4"/>
+     <circle cx="${CX}" cy="${CY}" r="${r3}" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+     <circle cx="${CX}" cy="${CY}" r="4" fill="rgba(255,255,255,0.2)"/>`;
+
+  // Separator lines
+  let lines='';
+  dims.forEach((_,i)=>{
+    const a=-Math.PI/2+i*sa;
+    lines+=`<line x1="${CX}" y1="${CY}" x2="${(CX+r3*Math.cos(a)).toFixed(1)}" y2="${(CY+r3*Math.sin(a)).toFixed(1)}" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>`;
+  });
+  document.getElementById('rLines').innerHTML=lines;
+
+  // Labels
+  let labels='';
+  dims.forEach((d,i)=>{
+    const am=-Math.PI/2+(i+.5)*sa;
+    const lr=r3+22;
+    const lx=CX+lr*Math.cos(am), ly=CY+lr*Math.sin(am);
+    const words=d.name.split(' ');
+    let lines2=[],cur='';
+    words.forEach(w=>{ if((cur+' '+w).trim().length>13&&cur){lines2.push(cur.trim());cur=w;}else cur=(cur+' '+w).trim(); });
+    if(cur)lines2.push(cur);
+    const lh=12;
+    lines2.forEach((line,li)=>{
+      labels+=`<text x="${lx.toFixed(1)}" y="${(ly-(lines2.length-1)*lh/2+li*lh).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="${d.color}" font-size="9" font-family="Space Grotesk,sans-serif" font-weight="600">${esc(line)}</text>`;
+    });
+    labels+=`<circle cx="${lx.toFixed(1)}" cy="${(ly-(lines2.length)*lh/2-4).toFixed(1)}" r="3" fill="${d.color}" opacity="0.8"/>`;
+  });
+  document.getElementById('rLabels').innerHTML=labels;
+
+  // Ring labels
+  document.getElementById('rRingLabels').innerHTML=
+    `<text x="${CX}" y="${CY-(r1+r2)/2}" text-anchor="middle" dominant-baseline="middle" fill="rgba(61,142,240,0.55)" font-size="8" font-family="Space Grotesk,sans-serif" font-weight="600">FASE 2</text>
+     <text x="${CX}" y="${CY-(r2+r3)/2}" text-anchor="middle" dominant-baseline="middle" fill="rgba(245,166,35,0.55)" font-size="8" font-family="Space Grotesk,sans-serif" font-weight="600">FASE 1</text>
+     <text x="${CX}" y="${CY-r1*.52}" text-anchor="middle" dominant-baseline="middle" fill="rgba(0,201,167,0.65)" font-size="8" font-family="Space Grotesk,sans-serif" font-weight="600">FASE 3</text>`;
+
+  // Dots
+  const filtered=getFiltered();
+  const byDim={};
+  filtered.forEach(s=>{if(!byDim[s.dim])byDim[s.dim]=[];byDim[s.dim].push(s);});
+  let dots='';
+  dims.forEach((dim,i)=>{
+    const sigs=byDim[dim.id]||[];
+    const am=-Math.PI/2+(i+.5)*sa;
+    const spread=sa*.72;
+    sigs.forEach(s=>{
+      const sc=calcScore(s); const fase=getFase(sc);
+      let rMin,rMax;
+      if(fase.ring===3){rMin=r2+4;rMax=r3-8;}
+      else if(fase.ring===2){rMin=r1+4;rMax=r2-4;}
+      else if(fase.ring===1){rMin=8;rMax=r1-4;}
+      else{rMin=r3+10;rMax=r3+24;}
+      const sameRing=sigs.filter(x=>getFase(calcScore(x)).ring===fase.ring);
+      const idx=sameRing.indexOf(s), tot=sameRing.length;
+      const angle=tot===1?am:am-spread*.4+(idx/(tot-1))*spread*.8;
+      let rFrac=fase.ring===3?1-(sc-9):fase.ring===2?1-(sc-5)/3:fase.ring===1?1-(sc-2)/2:.5;
+      rFrac=Math.max(0,Math.min(1,rFrac));
+      const rr=rMin+rFrac*(rMax-rMin);
+      const x=(CX+rr*Math.cos(angle)).toFixed(1), y=(CY+rr*Math.sin(angle)).toFixed(1);
+      const isSel=s.id===selId, dr=isSel?9:7;
+      dots+=`<g class="sig-dot" onclick="selectSignal(${s.id})" onmouseenter="showTip(event,${s.id})" onmouseleave="hideTip()">
+        <circle cx="${x}" cy="${y}" r="${dr+5}" fill="${dim.color}" opacity="0.08"/>
+        <circle cx="${x}" cy="${y}" r="${dr}" fill="${dim.color}" opacity="${isSel?1:.82}" stroke="${isSel?'#fff':fase.color}" stroke-width="${isSel?2.5:1.5}"/>
+        ${isSel?`<circle cx="${x}" cy="${y}" r="${dr+4}" fill="none" stroke="${dim.color}" stroke-width="1" opacity="0.4"/>`:''}
+      </g>`;
+    });
+  });
+  document.getElementById('rDots').innerHTML=dots;
+}
+
+// ── TOOLTIP ──
+function showTip(e,id){
+  const s=signals.find(x=>x.id===id);if(!s)return;
+  const sc=calcScore(s),fase=getFase(sc),dim=dimById(s.dim);
+  document.getElementById('rtip-name').textContent=s.nombre;
+  document.getElementById('rtip-rows').innerHTML=`<span style="color:${dim.color}">${dim.name}</span> · ${HOR_L[s.horizonte]}<br>Estratégico: ${s.estrategico}/10 · Mercado: ${s.mercado}/10<br>TRL: ${s.trl}/9 · Riesgo reg: ${s.regulatorio}/10<br>Competidores: ${(s.competidores||[]).slice(0,2).join(', ')||'—'}`;
+  document.getElementById('rtip-score').innerHTML=`<span style="color:${fase.color}">${sc.toFixed(1)}</span><span style="font-size:11px;color:var(--mut);font-weight:400"> / 10 — ${fase.short}</span>`;
+  const tip=document.getElementById('rtip');
+  tip.style.display='block';
+  tip.style.left=(e.clientX+14)+'px';
+  tip.style.top=(e.clientY-10)+'px';
+}
+function hideTip(){document.getElementById('rtip').style.display='none';}
+
+// ── TABLE ──
+function renderTable(){
+  const f=getFiltered();
+  document.getElementById('tableBody').innerHTML=f.map(s=>{
+    const sc=calcScore(s),fase=getFase(sc),dim=dimById(s.dim);
+    const rCol=s.regulatorio>=7?'var(--red)':s.regulatorio>=4?'var(--amber)':'var(--teal)';
+    return `<tr onclick="selectSignal(${s.id})" ondblclick="openModal(${s.id})" class="${s.id===selId?'sel':''}">
+      <td><div class="tname">${esc(s.nombre)}</div><div class="tsub">${esc(s.desc)}</div></td>
+      <td><div style="display:flex;align-items:center;gap:5px"><div style="height:4px;width:68px;background:var(--b2);border-radius:2px;overflow:hidden"><div style="height:100%;width:${Math.round(sc*10)}%;background:${dim.color};border-radius:2px"></div></div><span style="font-weight:700;font-family:var(--fh);color:${dim.color}">${sc.toFixed(1)}</span></div></td>
+      <td><span style="display:inline-flex;align-items:center;gap:5px;font-size:11px"><span style="width:6px;height:6px;border-radius:50%;background:${dim.color};display:inline-block"></span>${esc(dim.name)}</span></td>
+      <td><span style="font-size:11px;color:var(--mut2)">TRL ${s.trl}</span></td>
+      <td><span style="font-size:11px;color:var(--mut)">${HOR_L[s.horizonte]}</span></td>
+      <td><span style="font-weight:700;color:${rCol};font-family:var(--fh)">${s.regulatorio}/10</span></td>
+      <td><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:8px;background:${fase.color}22;color:${fase.color}">${fase.short}</span></td>
+      <td><button onclick="event.stopPropagation();openModal(${s.id})" style="background:transparent;border:1px solid var(--b2);border-radius:3px;padding:2px 6px;color:var(--mut);cursor:pointer;font-size:10px">✎</button>
+      <button onclick="event.stopPropagation();selId=${s.id};deleteSignal()" style="background:transparent;border:1px solid rgba(232,72,85,.3);border-radius:3px;padding:2px 6px;color:var(--red);cursor:pointer;font-size:10px;margin-left:3px">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── SIDEBAR ──
+function renderSidebar(){
+  let h=`<button class="fb ${curFilter==='all'?'act':''}" onclick="setFilter('all',this)"><span class="fdot" style="background:var(--txt)"></span>Todas<span class="fcnt">${signals.length}</span></button>`;
+  dims.forEach(d=>{
+    const sigs=signals.filter(s=>s.dim===d.id),isOpen=openDims.has(d.id),isAct=curFilter===d.id;
+    const sorted=[...sigs].sort((a,b)=>calcScore(b)-calcScore(a));
+    h+=`<div class="dim-group">
+      <button class="dtoggle ${isAct?'act':''}" onclick="toggleDim('${d.id}')">
+        <span class="fdot" style="background:${d.color}"></span>
+        <span style="flex:1;text-align:left">${esc(d.name)}</span>
+        <span class="fcnt">${sigs.length}</span>
+        <span class="darr ${isOpen?'open':''}">▶</span>
+      </button>
+      <div class="dsigs ${isOpen?'open':''}">
+        ${sorted.length===0?'<div style="font-size:11px;color:var(--mut);padding:4px 6px;font-style:italic">Sin señales</div>':
+        sorted.map(s=>{const sc=calcScore(s),fase=getFase(sc),isSel=s.id===selId;
+          return `<div class="dsig ${isSel?'sel':''}" onclick="selectSignal(${s.id})"><span class="dsig-dot" style="background:${fase.color}"></span><span class="dsig-name ${isSel?'sel':''}">${esc(s.nombre)}</span><span class="dsig-sc" style="color:${fase.color}">${sc.toFixed(1)}</span></div>`;
+        }).join('')}
+        <div style="padding:3px 5px"><button onclick="setFilter('${d.id}',null)" style="font-size:10px;color:var(--blue);background:transparent;border:none;cursor:pointer;font-family:var(--fh)">Ver solo esta →</button></div>
+      </div></div>`;
+  });
+  document.getElementById('sidebarDims').innerHTML=h;
+
+  const FASES=[
+    {key:'fase3',label:'Prioritarias',sub:'Fase 3 — Business Case',color:'#00c9a7',ring:1},
+    {key:'fase2',label:'En Estudio',sub:'Fase 2 — Estudio de Mercado',color:'#3d8ef0',ring:2},
+    {key:'fase1',label:'Monitoreando',sub:'Fase 1 — Vigilancia',color:'#f5a623',ring:3},
+    {key:'fase0',label:'Descartadas',sub:'Fuera del radar (≤1)',color:'#e84855',ring:0},
+  ];
+  let fh='';
+  FASES.forEach(f=>{
+    const sigs=signals.filter(s=>getFase(calcScore(s)).ring===f.ring),isOpen=openDims.has('f_'+f.key),isAct=curFilter===f.key;
+    const sorted=[...sigs].sort((a,b)=>calcScore(b)-calcScore(a));
+    fh+=`<div class="dim-group">
+      <button class="dtoggle ${isAct?'act':''}" onclick="toggleDim('f_${f.key}')">
+        <span class="fdot" style="background:${f.color}"></span>
+        <span style="flex:1;text-align:left;line-height:1.3">${f.label}<span style="display:block;font-size:9px;color:var(--mut);font-weight:400">${f.sub}</span></span>
+        <span class="fcnt">${sigs.length}</span>
+        <span class="darr ${isOpen?'open':''}">▶</span>
+      </button>
+      <div class="dsigs ${isOpen?'open':''}">
+        ${sorted.length===0?'<div style="font-size:11px;color:var(--mut);padding:4px 6px;font-style:italic">Sin señales</div>':
+        sorted.map(s=>{const sc=calcScore(s),dim=dimById(s.dim),isSel=s.id===selId;
+          return `<div class="dsig ${isSel?'sel':''}" onclick="selectSignal(${s.id})"><span class="dsig-dot" style="background:${dim.color}"></span><span class="dsig-name ${isSel?'sel':''}">${esc(s.nombre)}</span><span class="dsig-sc" style="color:${f.color}">${sc.toFixed(1)}</span></div>`;
+        }).join('')}
+      </div></div>`;
+  });
+  document.getElementById('sidebarFases').innerHTML=fh;
+}
+
+function toggleDim(id){if(openDims.has(id))openDims.delete(id);else openDims.add(id);renderSidebar();}
+
+// ── STATS ──
+function renderStats(){
+  const f=getFiltered(),avg=f.length?(f.reduce((a,s)=>a+calcScore(s),0)/f.length).toFixed(1):0;
+  const f3=signals.filter(s=>getFase(calcScore(s)).ring===1).length;
+  const f2=signals.filter(s=>getFase(calcScore(s)).ring===2).length;
+  document.getElementById('statsBar').innerHTML=
+    `<div class="sv"><span class="svv">${f.length}</span><span class="svl">Señales</span></div>
+     <div class="sv"><span class="svv" style="color:#00c9a7">${f3}</span><span class="svl">Fase 3</span></div>
+     <div class="sv"><span class="svv" style="color:#3d8ef0">${f2}</span><span class="svl">En Estudio</span></div>
+     <div class="sv"><span class="svv" style="color:#3d8ef0">${avg}</span><span class="svl">Prom. puntaje</span></div>
+     <div class="sv"><span class="svv">${dims.length}</span><span class="svl">Dimensiones</span></div>`;
+}
+
+// ── PANEL ──
+function selectSignal(id){
+  // Reset overlay when switching signals
+  if(selId!==id && histOverlayActive){
+    histOverlayActive=false;
+    document.getElementById('histLegend').classList.remove('show');
+  }
+  selId=id;
+  const s=signals.find(x=>x.id===id);if(!s)return;
+  const sc=calcScore(s),fase=getFase(sc),dim=dimById(s.dim);
+  document.getElementById('pempty').style.display='none';
+  document.getElementById('phdr').classList.add('show');
+  document.getElementById('pbody').classList.add('show');
+  document.getElementById('ptag').textContent=dim.name;
+  document.getElementById('ptag').style.color=dim.color;
+  document.getElementById('ptitle').textContent=s.nombre;
+  document.getElementById('pdesc').textContent=s.desc;
+  // Show history button
+  const hb=document.getElementById('histBtn');
+  if(hb){
+    hb.style.display='block';
+    hb.textContent='⟳ Ver evolución';
+    hb.classList.remove('active');
+  }
+  const pb=document.getElementById('panelHistBtn');
+  if(pb){pb.textContent='⟳ Ver evolución en radar';pb.style.color='var(--teal)';pb.style.borderColor='rgba(0,201,167,0.3)';}
+  renderPanelTabs(s,sc,fase,dim);
+  renderAll();
+}
+
+function renderPanelTabs(s,sc,fase,dim){
+  document.getElementById('ptc-analisis').innerHTML=
+    `<div><div class="mlbl">Puntaje global</div>
+    <div class="score-big"><span class="num" style="color:${dim.color}">${sc.toFixed(1)}</span><span class="den">/10</span></div>
+    <span class="fase-badge" style="color:${fase.color};border-color:${fase.color}44;background:${fase.color}11">${fase.label}</span></div>`+
+    `<div><div class="mlbl">Desglose</div>`+
+    [{l:'Potencial estratégico (35%)',v:s.estrategico,max:10,c:dim.color},{l:'Oportunidad de mercado (30%)',v:s.mercado,max:10,c:dim.color},{l:'Madurez TRL (20%)',v:s.trl,max:9,c:dim.color},{l:'Riesgo regulatorio (inv. 15%)',v:s.regulatorio,max:10,c:'#e84855'}]
+    .map(d=>`<div class="mrow"><span class="mname">${d.l}</span><span class="mval" style="color:${d.c}">${d.v}</span></div><div class="prog"><div class="progf" style="width:${Math.round(d.v/d.max*100)}%;background:${d.c}"></div></div>`).join('')+`</div>`+
+    `<div><div class="mlbl">TRL ${s.trl} — ${TRL_D[s.trl-1]}</div>
+    <div style="display:flex;gap:3px;margin-bottom:5px">${Array.from({length:9},(_,i)=>`<div style="flex:1;height:4px;border-radius:2px;background:${i<s.trl?dim.color:'rgba(255,255,255,0.08)'}"></div>`).join('')}</div>
+    <div style="font-size:11px;color:var(--mut)">Horizonte: ${HOR_L[s.horizonte]}</div></div>`+
+    `<div><div class="mlbl">Competidores</div><div>${(s.competidores||[]).map(c=>`<span class="cchip">${esc(c)}</span>`).join('')||'<span style="color:var(--mut);font-size:11px">Sin datos</span>'}</div></div>`+
+    `<div><div class="mlbl">Barreras y riesgos</div>${(s.riesgos||[]).map(r=>`<div class="risk-item"><span class="risk-ic ${r.n==='H'?'hi':r.n==='L'?'lo':'md'}">${r.n}</span><span class="risk-txt">${esc(r.t)}</span></div>`).join('')||'<span style="color:var(--mut);font-size:11px">Sin datos</span>'}</div>`;
+
+  const comentarios=s.comentarios||[];
+  document.getElementById('ptc-notas').innerHTML=
+    `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+    <div class="mlbl" style="margin-bottom:0">Actualizaciones</div>
+    <span style="font-size:10px;color:var(--mut);font-family:var(--fh)">${comentarios.length} comentario${comentarios.length!==1?'s':''}</span></div>
+    <div style="margin-bottom:9px"><textarea class="notes-area" id="notesArea" placeholder="Escribí una actualización, observación o decisión..."></textarea>
+    <div style="display:flex;justify-content:flex-end;margin-top:4px"><button class="btn-save-note" onclick="saveNote()">Agregar comentario</button></div></div>
+    <div id="commentFeed">${comentarios.length===0?'<div style="font-size:11px;color:var(--mut);font-style:italic">Sin actualizaciones todavía.</div>':
+    comentarios.slice().reverse().map((c,ri)=>`<div class="comment-item"><div class="comment-hdr"><div class="comment-av">E</div><span class="comment-dt">${fmtDate(c.ts)}</span></div><div class="comment-txt">${esc(c.texto)}</div><button class="comment-del" onclick="deleteComment(${comentarios.length-1-ri})" title="Eliminar">✕</button></div>`).join('')}</div>`;
+
+  const hist=(s.historial||[]).slice().reverse();
+  document.getElementById('ptc-historial').innerHTML=
+    `<div class="mlbl">Historial de cambios</div>`+
+    (hist.length?hist.map(h=>`<div class="hist-item"><div class="hdot" style="background:var(--mut2)"></div><div><div class="hact">${esc(h.accion)}</div><div class="htime">${fmtDate(h.ts)}</div></div></div>`).join(''):'<span style="color:var(--mut);font-size:11px">Sin historial</span>');
+}
+
+function setPTab(tab,btn){
+  document.querySelectorAll('.ptab').forEach(b=>b.classList.remove('act'));btn.classList.add('act');
+  document.querySelectorAll('.ptc').forEach(c=>c.classList.remove('act'));document.getElementById('ptc-'+tab).classList.add('act');
+}
+function saveNote(){
+  const s=signals.find(x=>x.id===selId);if(!s)return;
+  const area=document.getElementById('notesArea');
+  const texto=area.value.trim();if(!texto){notif('Escribí algo primero.');return;}
+  if(!s.comentarios)s.comentarios=[];
+  s.comentarios.push({texto,ts:Date.now()});
+  addHist(s,'Comentario agregado');saveState();area.value='';
+  const sc=calcScore(s);renderPanelTabs(s,sc,getFase(sc),dimById(s.dim));
+  document.querySelectorAll('.ptab')[1].click();notif('Comentario guardado ✓');
+}
+function deleteComment(idx){
+  const s=signals.find(x=>x.id===selId);if(!s)return;
+  if(!confirm('¿Eliminar este comentario?'))return;
+  s.comentarios.splice(idx,1);addHist(s,'Comentario eliminado');saveState();
+  const sc=calcScore(s);renderPanelTabs(s,sc,getFase(sc),dimById(s.dim));
+  document.querySelectorAll('.ptab')[1].click();notif('Eliminado ✓');
+}
+function addHist(s,accion){if(!s.historial)s.historial=[];s.historial.push({accion,ts:Date.now()});}
+function deleteSignal(){
+  const s=signals.find(x=>x.id===selId);if(!s)return;
+  if(!confirm(`¿Eliminar "${s.nombre}"? Esta acción no se puede deshacer.`))return;
+  signals=signals.filter(x=>x.id!==selId);
+  selId=null;
+  document.getElementById('pempty').style.display='block';
+  document.getElementById('phdr').classList.remove('show');
+  document.getElementById('pbody').classList.remove('show');
+  saveState();renderAll();notif('Señal eliminada ✓');
+}
+
+// ── MODAL SEÑAL ──
+function openModal(id=null){
+  const isEdit=id!==null;
+  document.getElementById('modalTitle').textContent=isEdit?'Editar señal':'Nueva Señal';
+  document.getElementById('f-editid').value=id||'';
+  document.getElementById('f-dim').innerHTML=dims.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('');
+  if(isEdit){
+    const s=signals.find(x=>x.id===id);if(!s)return;
+    document.getElementById('f-nombre').value=s.nombre;
+    document.getElementById('f-desc').value=s.desc;
+    document.getElementById('f-dim').value=s.dim;
+    document.getElementById('f-horizonte').value=s.horizonte;
+    ['estrategico','mercado','trl','regulatorio'].forEach(k=>{document.getElementById('f-'+k).value=s[k];document.getElementById('sv-'+k).textContent=s[k];});
+    document.getElementById('f-comp').value=(s.competidores||[]).join(', ');
+    document.getElementById('f-riesgos').value=(s.riesgos||[]).map(r=>r.t).join('\n');
+  }else{
+    ['f-nombre','f-desc','f-comp','f-riesgos'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f-horizonte').value='h2';
+    ['estrategico','mercado'].forEach(k=>{document.getElementById('f-'+k).value=5;document.getElementById('sv-'+k).textContent=5;});
+    document.getElementById('f-trl').value=4;document.getElementById('sv-trl').textContent=4;
+    document.getElementById('f-regulatorio').value=5;document.getElementById('sv-regulatorio').textContent=5;
+  }
+  updateScorePreview();document.getElementById('modalSignal').classList.add('open');
+}
+function svupd(k,v){document.getElementById('sv-'+k).textContent=v;updateScorePreview();}
+function updateScorePreview(){
+  const e=+document.getElementById('f-estrategico').value,m=+document.getElementById('f-mercado').value;
+  const t=+document.getElementById('f-trl').value,r=+document.getElementById('f-regulatorio').value;
+  const sc=Math.round((e*.35+m*.30+(t/9*10)*.20+(10-r)*.15)*10)/10;
+  const fase=getFase(sc);
+  document.getElementById('scorePreview').innerHTML=`Puntaje calculado: <strong style="color:${fase.color};font-size:14px">${sc.toFixed(1)}</strong>/10 — <span style="color:${fase.color}">${fase.label}</span>`;
+}
+function saveSignal(){
+  const nombre=document.getElementById('f-nombre').value.trim();if(!nombre){alert('Ingresá un nombre.');return;}
+  const editId=document.getElementById('f-editid').value,isEdit=editId!=='';
+  const riesgos=document.getElementById('f-riesgos').value.split('\n').filter(Boolean).map(t=>({n:t.toLowerCase().includes('alt')?'H':t.toLowerCase().includes('baj')?'L':'M',t}));
+  const data={nombre,desc:document.getElementById('f-desc').value.trim(),dim:document.getElementById('f-dim').value,horizonte:document.getElementById('f-horizonte').value,
+    estrategico:+document.getElementById('f-estrategico').value,mercado:+document.getElementById('f-mercado').value,trl:+document.getElementById('f-trl').value,regulatorio:+document.getElementById('f-regulatorio').value,
+    competidores:document.getElementById('f-comp').value.split(',').map(x=>x.trim()).filter(Boolean),riesgos};
+  if(isEdit){
+    const s=signals.find(x=>x.id===parseInt(editId));if(!s)return;
+    // Guardar snapshot ANTES de aplicar los cambios
+    addSnapshot(s);
+    Object.assign(s,data);
+    addHist(s,'Señal editada');
+    notif('Señal actualizada ✓');
+  } else {
+    const s={...data,id:Date.now(),comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()}],snapshots:[],ts:Date.now()};
+    // Primer snapshot al crear
+    addSnapshot(s);
+    signals.push(s);selId=s.id;notif('Señal creada ✓');
+  }
+  saveState();closeModal('modalSignal');renderAll();if(selId)selectSignal(selId);
+}
+
+// ── HISTORY OVERLAY ──
+let histOverlayActive = false;
+
+function addSnapshot(s){
+  if(!s.snapshots) s.snapshots=[];
+  const sc=calcScore(s);
+  s.snapshots.push({
+    ts:Date.now(),
+    score:sc,
+    fase:getFase(sc).ring,
+    estrategico:s.estrategico,
+    mercado:s.mercado,
+    trl:s.trl,
+    regulatorio:s.regulatorio,
+    dim:s.dim
+  });
+}
+
+// Calcula coordenadas SVG para un snapshot dado
+function snapshotCoords(snap){
+  const n=dims.length, sa=(2*Math.PI)/n;
+  const dimIdx=dims.findIndex(d=>d.id===snap.dim);
+  if(dimIdx<0) return null;
+  const am=-Math.PI/2+(dimIdx+.5)*sa;
+  const spread=sa*.72;
+  let rMin,rMax;
+  if(snap.fase===3){rMin=r2+4;rMax=r3-8;}
+  else if(snap.fase===2){rMin=r1+4;rMax=r2-4;}
+  else if(snap.fase===1){rMin=8;rMax=r1-4;}
+  else{rMin=r3+10;rMax=r3+24;}
+  let rFrac=snap.fase===3?1-(snap.score-9):snap.fase===2?1-(snap.score-5)/3:snap.fase===1?1-(snap.score-2)/2:.5;
+  rFrac=Math.max(0,Math.min(1,rFrac));
+  const rr=rMin+rFrac*(rMax-rMin);
+  return {x:CX+rr*Math.cos(am), y:CY+rr*Math.sin(am)};
+}
+
+function toggleHistOverlay(){
+  if(!selId){ notif('Seleccioná una señal primero.'); return; }
+  histOverlayActive=!histOverlayActive;
+  renderHistOverlay();
+  // sync both buttons
+  const active=histOverlayActive;
+  const hb=document.getElementById('histBtn');
+  const pb=document.getElementById('panelHistBtn');
+  if(hb){hb.textContent=active?'✕ Cerrar evolución':'⟳ Ver evolución';hb.classList.toggle('active',active);}
+  if(pb){pb.textContent=active?'✕ Cerrar evolución':'⟳ Ver evolución en radar';pb.style.color=active?'var(--amber)':'var(--teal)';pb.style.borderColor=active?'rgba(245,166,35,0.3)':'rgba(0,201,167,0.3)';}
+  document.getElementById('histLegend').classList.toggle('show',active);
+}
+
+function renderHistOverlay(){
+  const g=document.getElementById('rHistory');
+  if(!g) return;
+  if(!histOverlayActive||!selId){g.innerHTML='';return;}
+  const s=signals.find(x=>x.id===selId);
+  if(!s||!s.snapshots||s.snapshots.length===0){
+    g.innerHTML='';
+    notif('Esta señal no tiene historial de cambios todavía.');
+    histOverlayActive=false;
+    return;
+  }
+  const dim=dimById(s.dim);
+  const faseColors={'1':'#f5a623','2':'#3d8ef0','3':'#00c9a7','0':'#e84855'};
+
+  // Deduplicate: only keep snapshots where score or dim changed
+  const snaps=s.snapshots;
+  let svg='';
+
+  // Draw dim overlay (darkened background except selected dim)
+  const n=dims.length, sa=(2*Math.PI)/n;
+  const dimIdx=dims.findIndex(d=>d.id===s.dim);
+  dims.forEach((_,i)=>{
+    if(i===dimIdx) return; // skip current dim
+    const a0=-Math.PI/2+i*sa, a1=a0+sa;
+    const x0=(CX+(r3+2)*Math.cos(a0)).toFixed(1), y0=(CY+(r3+2)*Math.sin(a0)).toFixed(1);
+    const x1=(CX+(r3+2)*Math.cos(a1)).toFixed(1), y1=(CY+(r3+2)*Math.sin(a1)).toFixed(1);
+    svg+=`<path d="M${CX},${CY} L${x0},${y0} A${r3+2},${r3+2} 0 0,1 ${x1},${y1} Z" fill="rgba(0,0,0,0.5)"/>`;
+  });
+
+  // Draw trajectory line connecting snapshots
+  const coords=snaps.map(snap=>snapshotCoords(snap)).filter(Boolean);
+  if(coords.length>=2){
+    for(let i=0;i<coords.length-1;i++){
+      const c0=coords[i], c1=coords[i+1];
+      svg+=`<line x1="${c0.x.toFixed(1)}" y1="${c0.y.toFixed(1)}" x2="${c1.x.toFixed(1)}" y2="${c1.y.toFixed(1)}" stroke="rgba(255,255,255,0.35)" stroke-width="1.5" stroke-dasharray="5 3"/>`;
+      // Arrow at midpoint
+      const mx=(c0.x+c1.x)/2, my=(c0.y+c1.y)/2;
+      const angle=Math.atan2(c1.y-c0.y,c1.x-c0.x)*180/Math.PI;
+      svg+=`<polygon points="-5,-3 4,0 -5,3" fill="rgba(255,255,255,0.5)" transform="translate(${mx.toFixed(1)},${my.toFixed(1)}) rotate(${angle.toFixed(1)})"/>`;
+    }
+  }
+
+  // Draw snapshot dots
+  snaps.forEach((snap,i)=>{
+    const coord=snapshotCoords(snap);
+    if(!coord) return;
+    const fc=faseColors[snap.fase]||'#888';
+    const isLast=i===snaps.length-1;
+    const label=new Date(snap.ts).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+    const r=isLast?9:7;
+    // Outer glow
+    svg+=`<circle cx="${coord.x.toFixed(1)}" cy="${coord.y.toFixed(1)}" r="${r+6}" fill="${fc}" opacity="0.1"/>`;
+    // Dot
+    svg+=`<circle cx="${coord.x.toFixed(1)}" cy="${coord.y.toFixed(1)}" r="${r}" fill="${isLast?fc:'rgba(13,15,26,0.85)'}}" stroke="${fc}" stroke-width="2"/>`;
+    // Index number inside
+    svg+=`<text x="${coord.x.toFixed(1)}" y="${coord.y.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="${isLast?'#fff':fc}" font-size="${isLast?9:8}" font-family="Space Grotesk,sans-serif" font-weight="700">${i+1}</text>`;
+    // Date label — offset to avoid overlap
+    const labelAngle=Math.atan2(coord.y-CY,coord.x-CX);
+    const lx=(coord.x+22*Math.cos(labelAngle)).toFixed(1);
+    const ly=(coord.y+22*Math.sin(labelAngle)).toFixed(1);
+    svg+=`<rect x="${(+lx-22).toFixed(1)}" y="${(+ly-8).toFixed(1)}" width="44" height="14" rx="3" fill="rgba(10,14,24,0.85)"/>`;
+    svg+=`<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" fill="${fc}" font-size="8" font-family="Space Grotesk,sans-serif" font-weight="600">${label}</text>`;
+    // Score badge
+    svg+=`<rect x="${(coord.x-13).toFixed(1)}" y="${(coord.y+r+3).toFixed(1)}" width="26" height="12" rx="2" fill="${fc}22"/>`;
+    svg+=`<text x="${coord.x.toFixed(1)}" y="${(coord.y+r+9).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="${fc}" font-size="8" font-family="Space Grotesk,sans-serif" font-weight="700">${snap.score.toFixed(1)}</text>`;
+  });
+
+  // Title
+  svg+=`<rect x="10" y="10" width="220" height="22" rx="4" fill="rgba(10,14,24,0.85)"/>`;
+  svg+=`<text x="20" y="21" dominant-baseline="middle" fill="${dim.color}" font-size="10" font-family="Space Grotesk,sans-serif" font-weight="600">Evolución: ${esc(s.nombre.substring(0,28))}${s.nombre.length>28?'…':''}</text>`;
+
+  g.innerHTML=svg;
+}
+
+function clearSnapshots(){
+  const s=signals.find(x=>x.id===selId);if(!s)return;
+  if(!s.snapshots||s.snapshots.length===0){notif('Esta señal no tiene historial de evolución.');return;}
+  if(!confirm('¿Borrar todo el historial de evolución de esta señal? Esta acción no se puede deshacer.'))return;
+  s.snapshots=[];
+  // Si el overlay está activo, cerrarlo
+  if(histOverlayActive){
+    histOverlayActive=false;
+    document.getElementById('histLegend').classList.remove('show');
+    const hb=document.getElementById('histBtn');
+    if(hb){hb.textContent='⟳ Ver evolución';hb.classList.remove('active');}
+    const pb=document.getElementById('panelHistBtn');
+    if(pb){pb.textContent='⟳ Ver evolución en radar';pb.style.color='var(--teal)';pb.style.borderColor='rgba(0,201,167,0.3)';}
+    document.getElementById('rHistory').innerHTML='';
+  }
+  addHist(s,'Historial de evolución borrado');
+  saveState();notif('Historial de evolución borrado ✓');
+}
+const DIM_PAL=['#3d8ef0','#00c9a7','#9b72f5','#f5a623','#e84855','#4caf6e','#ff7eb3','#8ecde6','#ffd166','#ef8c4e','#c77dff','#a8dadc'];
+function openDimModal(){renderDimList();document.getElementById('modalDims').classList.add('open');}
+function renderDimList(){
+  document.getElementById('dimList').innerHTML=dims.map((d,i)=>`<div class="dim-item"><div class="dim-color" style="background:${d.color}"></div><input class="dim-name-input" id="dn-${i}" value="${esc(d.name)}" placeholder="Nombre"><button class="btn-rm" onclick="removeDimRow(${i})">✕</button></div>`).join('');
+  document.getElementById('dimPreviewTxt').textContent=dims.length+' porciones — el radar se actualiza al guardar';
+}
+function addDimRow(){dims.push({id:'dim_'+Date.now(),name:'Nueva dimensión',color:DIM_PAL[dims.length%DIM_PAL.length]});renderDimList();}
+function removeDimRow(i){if(dims.length<=2){notif('Mínimo 2 dimensiones.');return;}signals.forEach(s=>{if(s.dim===dims[i].id)s.dim=dims[0].id;});dims.splice(i,1);renderDimList();}
+function saveDims(){dims.forEach((d,i)=>{const inp=document.getElementById('dn-'+i);if(inp)d.name=inp.value.trim()||d.name;});saveState();closeModal('modalDims');renderAll();notif('Radar actualizado — '+dims.length+' dimensiones ✓');}
+
+// ── PDF ──
+function printSignal(){
+  const s=signals.find(x=>x.id===selId);if(!s)return;
+  const sc=calcScore(s),fase=getFase(sc),dim=dimById(s.dim);
+  const rCol=v=>v>=7?'#e84855':v>=4?'#f5a623':'#00c9a7';
+
+  // ── Capturar el SVG del radar como imagen ──
+  function getSvgImage(withHistory){
+    // Activar/desactivar overlay de historia según parámetro
+    const prevActive=histOverlayActive;
+    histOverlayActive=withHistory;
+    renderHistOverlay();
+    const svgEl=document.getElementById('radarSvg');
+    const svgData=new XMLSerializer().serializeToString(svgEl);
+    const svgBlob='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgData);
+    // Restaurar estado anterior
+    histOverlayActive=prevActive;
+    renderHistOverlay();
+    return svgBlob;
+  }
+
+  // Generar imagen del radar con señal seleccionada (sin overlay)
+  const radarImg=getSvgImage(false);
+
+  // Generar imagen del radar con overlay de evolución (si hay snapshots)
+  const hasSnaps=(s.snapshots||[]).length>0;
+  const evolImg=hasSnaps?getSvgImage(true):null;
+
+  // ── Tabla de evolución ──
+  const snaps=s.snapshots||[];
+  const faseLabel={3:'Fase 3 — Business Case',2:'Fase 2 — En Estudio',1:'Fase 1 — Monitoreando',0:'Descartada'};
+  const faseColor={3:'#00c9a7',2:'#3d8ef0',1:'#f5a623',0:'#e84855'};
+  const evolTable=snaps.length>0?`
+    <div class="pr-sec">
+      <h3>Historial de evolución (${snaps.length} registro${snaps.length!==1?'s':''})</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:6px">
+        <thead><tr style="background:#f5f5f5">
+          <th style="text-align:left;padding:6px 8px;border:1px solid #ddd;font-size:10px;letter-spacing:.06em;text-transform:uppercase">N°</th>
+          <th style="text-align:left;padding:6px 8px;border:1px solid #ddd;font-size:10px;letter-spacing:.06em;text-transform:uppercase">Fecha</th>
+          <th style="text-align:center;padding:6px 8px;border:1px solid #ddd;font-size:10px;letter-spacing:.06em;text-transform:uppercase">Puntaje</th>
+          <th style="text-align:left;padding:6px 8px;border:1px solid #ddd;font-size:10px;letter-spacing:.06em;text-transform:uppercase">Fase</th>
+          <th style="text-align:center;padding:6px 8px;border:1px solid #ddd;font-size:10px;letter-spacing:.06em;text-transform:uppercase">Estratégico</th>
+          <th style="text-align:center;padding:6px 8px;border:1px solid #ddd;font-size:10px;letter-spacing:.06em;text-transform:uppercase">Mercado</th>
+          <th style="text-align:center;padding:6px 8px;border:1px solid #ddd;font-size:10px;letter-spacing:.06em;text-transform:uppercase">TRL</th>
+          <th style="text-align:center;padding:6px 8px;border:1px solid #ddd;font-size:10px;letter-spacing:.06em;text-transform:uppercase">Riesgo Reg.</th>
+        </tr></thead>
+        <tbody>${snaps.map((snap,i)=>{
+          const isLast=i===snaps.length-1;
+          const bg=isLast?'#f0fdf8':'#fff';
+          return `<tr style="background:${bg}">
+            <td style="padding:5px 8px;border:1px solid #ddd;color:#888;font-size:11px">${i+1}</td>
+            <td style="padding:5px 8px;border:1px solid #ddd">${fmtDate(snap.ts)}</td>
+            <td style="padding:5px 8px;border:1px solid #ddd;text-align:center;font-weight:700;color:${faseColor[snap.fase]||'#333'}">${snap.score.toFixed(1)}</td>
+            <td style="padding:5px 8px;border:1px solid #ddd"><span style="color:${faseColor[snap.fase]||'#333'};font-weight:600">${faseLabel[snap.fase]||'—'}</span></td>
+            <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${snap.estrategico}</td>
+            <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${snap.mercado}</td>
+            <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${snap.trl}</td>
+            <td style="padding:5px 8px;border:1px solid #ddd;text-align:center">${snap.regulatorio}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>`:
+    `<div class="pr-sec"><h3>Historial de evolución</h3><p style="font-size:12px;color:#888">Sin historial registrado todavía. Los snapshots se guardan automáticamente cada vez que editás los puntajes.</p></div>`;
+
+  document.getElementById('printpage').innerHTML=
+    `<div class="pr-logo">RADAR NUEVAS ENERGÍAS — DISTROCUYO · ${new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'})}</div>`+
+    `<div class="pr-title">${esc(s.nombre)}</div>`+
+    `<div class="pr-sub">Dimensión: ${esc(dim.name)} · TRL ${s.trl} · ${HOR_L[s.horizonte]} · ${fase.label}</div>`+
+
+    // ── Radar actual ──
+    `<div class="pr-sec"><h3>Posición actual en el radar</h3>
+      <div style="display:flex;justify-content:center;margin:10px 0">
+        <img src="${radarImg}" style="width:320px;height:320px;border:1px solid #eee;border-radius:6px" alt="Radar">
+      </div>
+    </div>`+
+
+    // ── Radar con evolución ──
+    (evolImg?`<div class="pr-sec" style="page-break-before:always"><h3>Evolución de la señal en el radar</h3>
+      <div style="display:flex;justify-content:center;margin:10px 0">
+        <img src="${evolImg}" style="width:320px;height:320px;border:1px solid #eee;border-radius:6px" alt="Evolución en radar">
+      </div>
+    </div>`:'')+
+
+    // ── Puntajes ──
+    `<div class="pr-sec"><h3>Puntaje actual: ${sc.toFixed(1)}/10</h3>`+
+    [{l:'Potencial estratégico (35%)',v:s.estrategico,max:10,c:'#3d8ef0'},{l:'Oportunidad de mercado (30%)',v:s.mercado,max:10,c:'#3d8ef0'},{l:'Madurez TRL (20%)',v:s.trl,max:9,c:'#00c9a7'},{l:'Riesgo regulatorio (15% inv.)',v:s.regulatorio,max:10,c:rCol(s.regulatorio)}]
+    .map(d=>`<div class="pr-drow"><span style="width:200px">${d.l}</span><div class="pr-bar"><div class="pr-barf" style="width:${Math.round(d.v/d.max*100)}%;background:${d.c}"></div></div><span style="width:24px;text-align:right;font-weight:700">${d.v}</span></div>`).join('')+`</div>`+
+
+    `<div class="pr-sec"><h3>Descripción</h3><p style="font-size:13px;color:#333;line-height:1.6">${esc(s.desc)}</p></div>`+
+    `<div class="pr-sec"><h3>Competidores</h3><div class="pr-chips">${(s.competidores||[]).map(c=>`<span class="pr-chip">${esc(c)}</span>`).join('')||'Sin datos'}</div></div>`+
+    `<div class="pr-sec"><h3>Barreras y riesgos</h3>${(s.riesgos||[]).map(r=>`<div class="pr-rrow"><span class="pr-rbadge" style="background:${r.n==='H'?'#fde8ea':r.n==='L'?'#e6f7f4':'#fef6e7'};color:${r.n==='H'?'#e84855':r.n==='L'?'#00c9a7':'#f5a623'}">${r.n==='H'?'ALTO':r.n==='L'?'BAJO':'MEDIO'}</span><span>${esc(r.t)}</span></div>`).join('')||'Sin datos'}</div>`+
+
+    evolTable+
+
+    ((s.comentarios||[]).length?`<div class="pr-sec"><h3>Actualizaciones</h3>`+s.comentarios.slice().reverse().map(c=>`<div style="margin-bottom:9px;padding-bottom:9px;border-bottom:1px solid #eee"><div style="font-size:10px;color:#888">${fmtDate(c.ts)}</div><div style="font-size:12px;line-height:1.6;white-space:pre-wrap">${esc(c.texto)}</div></div>`).join('')+`</div>`:'')+
+    `<div class="pr-footer"><span>Radar Nuevas Energías — Distrocuyo</span><span>Equipo de Incubación de Nuevos Negocios</span></div>`;
+
+  window.print();
+}
+
+// ── IMPORT / EXPORT ──
+function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({signals,dims},null,2)],{type:'application/json'}));a.download='radar_'+new Date().toISOString().split('T')[0]+'.json';a.click();notif('Exportado ✓');}
+function importData(){const inp=document.createElement('input');inp.type='file';inp.accept='.json';inp.onchange=e=>{const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.signals&&d.dims){signals=d.signals;dims=d.dims;saveState();renderAll();notif(d.signals.length+' señales importadas ✓');}else alert('Formato inválido.');}catch(err){alert('Error: '+err.message);}};r.readAsText(e.target.files[0]);};inp.click();}
+
+// ── HELPERS ──
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function setView(v){
+  curView=v;
+  document.getElementById('radarView').style.display=v==='radar'?'flex':'none';
+  document.getElementById('tableView').style.display=v==='tabla'?'block':'none';
+  document.getElementById('btnRadar').classList.toggle('act',v==='radar');
+  document.getElementById('btnTabla').classList.toggle('act',v==='tabla');
+  renderAll();
+}
+function setFilter(f){curFilter=f;renderAll();}
+function doSearch(v){curSearch=v;renderAll();}
+function setSort(v){curSort=v;renderAll();}
+function notif(msg){const el=document.getElementById('notif');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2500);}
+function renderAll(){renderSidebar();renderStats();renderTable();if(curView==='radar'){renderRadar();renderHistOverlay();}}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')['modalSignal','modalDims'].forEach(id=>closeModal(id));
+  if(e.key==='n'&&!e.ctrlKey&&!e.metaKey&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA')openModal();
+});
+window.addEventListener('resize',()=>{if(curView==='radar')renderRadar();});
+
+// INIT
+renderAll();
+</script>
+</body>
+</html>
