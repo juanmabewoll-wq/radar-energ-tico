@@ -409,8 +409,8 @@ tr{cursor:pointer}
 <div class="notif" id="notif"></div>
 
 <script>
-const SK='radar_v7';
-const DATA_VERSION='2026-05-12-v5';
+const SK='radar_v8';
+const DATA_VERSION='2026-05-12-v6';
 const DIMS_DEF=[
   {id:'hidrogeno',name:'Hidrógeno y e-fuels',color:'#3d8ef0'},
   {id:'almacenamiento',name:'Almacenamiento de Energía',color:'#00c9a7'},
@@ -420,7 +420,7 @@ const DIMS_DEF=[
   {id:'generacion',name:'Generación',color:'#4caf6e'},
   {id:'tecnologia',name:'Tecnología y Redes',color:'#ff7eb3'},
   {id:'otros',name:'Otros',color:'#8ecde6'},
-  {id:'innovacion',name:'Innovación',color:'#8e44ad'},
+  {id:'eficiencia',name:'Eficiencia Energética',color:'#27ae60'},
 ];
 const SIGS_DEF=[
   {id:1,nombre:'Electrólisis PEM hidrógeno verde',desc:'Producción de H₂ con energía renovable. Alta pureza, respuesta rápida.',dim:'hidrogeno',horizonte:'h2',estrategico:9,mercado:8,trl:6,regulatorio:6,competidores:['Nel ASA','ITM Power','Plug Power'],riesgos:[{n:'H',t:'Sin normativa específica en Argentina'},{n:'M',t:'Costo de pila aún elevado'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-2160000000}],ts:Date.now()-2160000000},
@@ -437,7 +437,7 @@ const SIGS_DEF=[
   {id:12,nombre:'Smart Grid y microrredes con IA',desc:'Automatización y optimización predictiva de redes locales.',dim:'tecnologia',horizonte:'h1',estrategico:8,mercado:8,trl:7,regulatorio:5,competidores:['Schneider','Siemens','ABB'],riesgos:[{n:'M',t:'Alta inversión en infraestructura de datos'},{n:'M',t:'Integración con sistemas legacy'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-604800000}],ts:Date.now()-604800000},
   {id:13,nombre:'Captura directa de CO₂ (DAC)',desc:'Captura de CO₂ atmosférico. Créditos de carbono de alta integridad.',dim:'otros',horizonte:'h3',estrategico:2,mercado:3,trl:4,regulatorio:4,competidores:['Climeworks','Carbon Engineering'],riesgos:[{n:'H',t:'Costo energético muy elevado'},{n:'M',t:'Mercado de créditos en formación'}],comentarios:[],historial:[{accion:'Señal creada',ts:Date.now()-3024000000}],snapshots:[],ts:Date.now()-3024000000},
   {id:14,nombre:'Paridad firme renovables + storage',desc:'Solar/eólico+BESS supera en costo a carbón y gas para generación 24/7.',dim:'generacion',horizonte:'h1',estrategico:9,mercado:9,trl:9,regulatorio:2,competidores:['Al Dhafra / Masdar (EAU)','NextEra Energy (EE.UU.)','Enel Green Power (LATAM)'],riesgos:[{n:'M',t:'Financiamiento en mercados emergentes'},{n:'M',t:'Marco regulatorio PPA firme en AR incompleto'},{n:'L',t:'Tecnología y cadena de suministro maduros'}],comentarios:[],historial:[{accion:'Señal creada 12/05/2026 — IRENA confirma USD 54-82/MWh para solar+storage firme, por debajo del carbón nuevo (USD 70-85) y gas (>USD 100). Score: 8.5. Fuente: IRENA 24/7 Renewables, 6 may 2026',ts:Date.now()}],snapshots:[],ts:Date.now()},
-  {id:16,nombre:'Fusión nuclear (ITER y startups)',desc:'Generación por fusión de hidrógeno. Energía prácticamente ilimitada y sin residuos de larga vida.',dim:'innovacion',horizonte:'h3',estrategico:6,mercado:6,trl:4,regulatorio:3,competidores:['Commonwealth Fusion','TAE Technologies','Helion Energy'],riesgos:[{n:'H',t:'TRL bajo — horizonte comercial incierto post-2035'},{n:'M',t:'Inversión inicial muy elevada sin retorno a corto plazo'},{n:'L',t:'Sin barreras regulatorias específicas aún'}],comentarios:[],historial:[{accion:'Señal creada 12/05/2026 — Dimensión Innovación incorporada al radar. Señal de seguimiento de largo plazo.',ts:Date.now()}],snapshots:[],ts:Date.now()},
+  {id:16,nombre:'Demand response y gestión de demanda',desc:'Reducción y desplazamiento de consumo eléctrico en horarios pico mediante agregadores y smart meters.',dim:'eficiencia',horizonte:'h1',estrategico:8,mercado:8,trl:8,regulatorio:5,competidores:['Enel X','AutoGrid','Voltus'],riesgos:[{n:'M',t:'Marco regulatorio de agregadores pendiente en Argentina'},{n:'M',t:'Requiere medición inteligente masiva'},{n:'L',t:'Tecnología probada en Europa y EE.UU.'}],comentarios:[],historial:[{accion:'Señal creada 12/05/2026 — Dimensión Eficiencia Energética incorporada al radar. Score: 7.4.',ts:Date.now()}],snapshots:[],ts:Date.now()},
   {id:15,nombre:'Sodio-ion a escala comercial (CATL 60 GWh)',desc:'CATL firma 60 GWh con HyperStrong — sodio-ion entra al mercado BESS grid-scale.',dim:'almacenamiento',horizonte:'h1',estrategico:8,mercado:8,trl:8,regulatorio:3,competidores:['CATL + HyperStrong (China)','HiNa Battery (China)','Altris / Faradion (Europa)'],riesgos:[{n:'H',t:'Cadena de suministro concentrada en China'},{n:'M',t:'Certificaciones técnicas sodio-ion en AR pendientes'},{n:'L',t:'Marco regulatorio BESS existente — sin cambios'}],comentarios:[],historial:[{accion:'Señal creada 12/05/2026 — CATL firma 60 GWh sodio-ion con HyperStrong, mayor contrato de la historia. Desempeño en frío: ventaja para Cuyo/Patagonia. Score: 8.0. Fuente: Electrek / ESS News, 27 abr-8 may 2026',ts:Date.now()}],snapshots:[],ts:Date.now()},
 ];
 
